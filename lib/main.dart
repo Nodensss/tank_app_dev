@@ -62,10 +62,13 @@ class _TankForm323321State extends State<TankForm323321> {
   String result = '';
 
   final minLevel323 = 30.0;
-  final minLevel321 = 160.0;
   final maxLevel321 = 634.0;
   final proportionIncrease323 = 35.0;
   final proportionVolume321 = 340.0;
+
+  double _target321 = 160;
+  final TextEditingController _customTarget321 = TextEditingController();
+  String _targetOption = '160';
 
   void calculate() {
     final l323 = double.tryParse(level323.text) ?? 0;
@@ -73,20 +76,21 @@ class _TankForm323321State extends State<TankForm323321> {
     final rate = double.tryParse(flowRate.text) ?? 1;
 
     final timeToMin = (l323 - minLevel323) / rate;
-    final pumpVolume = l321 - minLevel321;
+    final pumpVolume = l321 - _target321;
     final increase = (proportionIncrease323 / proportionVolume321) * pumpVolume;
     final newLevel = l323 + increase;
     final totalTime = (newLevel - minLevel323) / rate;
     final nextPumping =
         DateTime.now().add(Duration(minutes: (totalTime * 60).round()));
 
-    final fullPump = maxLevel321 - minLevel321;
+    final fullPump = maxLevel321 - _target321;
     final fullLevel = l323 + (proportionIncrease323 / proportionVolume321) * fullPump;
     final fullTime = (fullLevel - minLevel323) / rate;
     final endTime = nextPumping.add(Duration(minutes: (fullTime * 60).round()));
 
     setState(() {
       result =
+          'Целевой уровень в 321: ${_target321.toStringAsFixed(0)} мм\n'
           'Объём перекачки: ${pumpVolume.toStringAsFixed(0)} мм\n'
           'Без перекачки: ${timeToMin.toStringAsFixed(2)} ч\n'
           'После текущей перекачки: ${totalTime.toStringAsFixed(2)} ч\n'
@@ -109,6 +113,44 @@ class _TankForm323321State extends State<TankForm323321> {
         calculate,
         result,
         Colors.teal[100]!,
+        extra: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DropdownButton<String>(
+              value: _targetOption,
+              items: const [
+                DropdownMenuItem(value: '160', child: Text('160')),
+                DropdownMenuItem(value: '0', child: Text('0')),
+                DropdownMenuItem(value: 'custom', child: Text('custom')),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _targetOption = value!;
+                  if (_targetOption == '160') {
+                    _target321 = 160;
+                  } else if (_targetOption == '0') {
+                    _target321 = 0;
+                  } else {
+                    _target321 =
+                        double.tryParse(_customTarget321.text) ?? _target321;
+                  }
+                });
+              },
+            ),
+            if (_targetOption == 'custom')
+              TextField(
+                controller: _customTarget321,
+                keyboardType: TextInputType.number,
+                decoration:
+                    const InputDecoration(labelText: 'Целевой уровень 321 (мм)'),
+                onChanged: (value) {
+                  setState(() {
+                    _target321 = double.tryParse(value) ?? _target321;
+                  });
+                },
+              ),
+          ],
+        ),
       );
 }
 
@@ -187,6 +229,7 @@ Widget buildForm(
   VoidCallback onCalc,
   String result,
   Color bg,
+  {Widget? extra,}
 ) {
   return Container(
     color: bg,
@@ -210,6 +253,7 @@ Widget buildForm(
             controller: ctrl3,
             keyboardType: TextInputType.number,
           ),
+          if (extra != null) extra!,
           SizedBox(height: 20),
           Center(
             child: ElevatedButton.icon(
